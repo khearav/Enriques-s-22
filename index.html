@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FELICES 22 — ARMA TU PASTEL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;image-rendering:pixelated}
+:root{
+  --gold:#ffd23f;--accent:#5b8c3e;--text:#7ec850;
+  --pink:#c8896a;--cream:#a0825a;--dark:#1a2614;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--dark)}
+body{font-family:'Press Start 2P',monospace;cursor:none}
+
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+}
+
+#cursor{
+  position:fixed;width:16px;height:16px;
+  background:var(--text);z-index:9999;pointer-events:none;
+  animation:cursorBlink 0.8s steps(1) infinite;
+  transform:translate(-4px,-4px);
+}
+@keyframes cursorBlink{50%{opacity:0}}
+@media(hover:none){#cursor{display:none}}
+
+.screen{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity 0.3s;
+}
+.screen.hidden{opacity:0;pointer-events:none;display:none}
+
+/* ===== INTRO ===== */
+#introScreen{background:var(--dark);z-index:100}
+.crt-title{text-align:center;animation:flicker 4s infinite}
+@keyframes flicker{0%,95%,100%{opacity:1}96%,99%{opacity:0.8}97%{opacity:0.4}}
+.big-title{
+  font-size:clamp(1rem,4vw,2.2rem);
+  color:var(--gold);
+  text-shadow:4px 4px 0 #4a3219, 0 0 20px var(--gold);
+  line-height:1.4;margin-bottom:24px;letter-spacing:2px;
+}
+.sub-title{
+  font-size:clamp(0.45rem,1.5vw,0.7rem);
+  color:var(--text);margin-bottom:48px;
+  line-height:2;text-align:center;
+}
+.pixel-btn{
+  font-family:'Press Start 2P',monospace;
+  font-size:clamp(0.5rem,1.8vw,0.8rem);
+  background:var(--accent);color:white;
+  border:none;padding:16px 32px;cursor:pointer;
+  box-shadow:4px 4px 0 #2d4a1f;
+  transition:transform 0.1s,box-shadow 0.1s;
+  animation:btnPulse 1s steps(1) infinite;
+  letter-spacing:1px;
+}
+@keyframes btnPulse{50%{background:#7ec850}}
+.pixel-btn:active{transform:translate(4px,4px);box-shadow:0 0 0 #7a0020}
+.pixel-deco{font-size:clamp(0.4rem,1.2vw,0.6rem);color:rgba(255,255,255,0.3);margin-top:32px;letter-spacing:1px}
+
+/* ===== HUD ===== */
+#hud{
+  position:fixed;top:0;left:0;right:0;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;z-index:200;
+  background:rgba(0,0,0,0.7);
+  border-bottom:2px solid var(--text);
+}
+.hud-layers{font-size:clamp(0.6rem,2.2vw,1rem);color:var(--gold)}
+.hud-timer{font-size:clamp(0.5rem,1.8vw,0.75rem);color:var(--text)}
+.hud-lives{font-size:clamp(0.6rem,2vw,0.9rem);color:var(--accent)}
+
+/* ===== GAME CANVAS ===== */
+#gameCanvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* ===== LEVEL CARD ===== */
+#levelCard{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,0.9);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;text-align:center;padding:20px;
+}
+#levelCard.hidden{display:none}
+.lc-name{font-size:clamp(0.9rem,3vw,1.6rem);color:var(--gold);text-shadow:3px 3px 0 #4a3219;line-height:1.4}
+.lc-desc{font-size:clamp(0.4rem,1.3vw,0.6rem);color:var(--text);line-height:2;max-width:500px}
+.lc-controls{font-size:clamp(0.35rem,1.1vw,0.55rem);color:rgba(255,255,255,0.4);margin-top:8px;line-height:2}
+
+/* ===== END SCREEN ===== */
+#endScreen{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(0,0,0,0.95);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:24px;text-align:center;padding:20px;
+}
+#endScreen.hidden{display:none}
+.end-title{font-size:clamp(1rem,4vw,2rem);text-shadow:4px 4px 0 currentColor;line-height:1.4}
+.end-msg{font-size:clamp(0.4rem,1.3vw,0.65rem);color:white;line-height:2.2;max-width:520px}
+
+/* ===== MOBILE CONTROLS ===== */
+#mobileControls{
+  position:fixed;bottom:0;left:0;right:0;
+  display:none;justify-content:space-between;align-items:flex-end;
+  padding:16px 24px 24px;z-index:250;pointer-events:none;
+}
+@media(hover:none),(pointer:coarse){#mobileControls{display:flex}}
+.mob-btn{
+  font-family:'Press Start 2P',monospace;
+  font-size:1.3rem;background:rgba(255,255,255,0.15);
+  border:2px solid rgba(255,255,255,0.3);
+  color:white;width:60px;height:60px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:4px;pointer-events:all;
+  user-select:none;-webkit-user-select:none;
+}
+.mob-btn:active{background:rgba(255,255,255,0.35)}
+.mob-dpad{display:flex;gap:8px}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+
+<!-- INTRO -->
+<div class="screen" id="introScreen">
+  <div class="crt-title">
+    <div class="big-title">FELICES 22<br>ARMA TU PASTEL</div>
+    <div class="sub-title">
+      OBJETIVO: ATRAPA 22 CAPAS<br>
+      CUIDADO: NO LAS DEJES CAER<br>
+      EVITA LAS VELAS — TE QUITAN VIDA 🕯️
+    </div>
+    <button class="pixel-btn" id="startBtn">► INICIAR</button>
+    <div class="pixel-deco">INSERT COIN — PRESS START</div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" style="display:none">
+  <div class="hud-lives" id="hudLives">♥ ♥ ♥</div>
+  <div class="hud-layers" id="hudLayers">0 / 22</div>
+  <div class="hud-timer" id="hudTimer">60</div>
+</div>
+
+<!-- GAME -->
+<div class="screen hidden" id="gameScreen">
+  <canvas id="gameCanvas"></canvas>
+</div>
+
+<!-- LEVEL CARD -->
+<div id="levelCard" class="hidden">
+  <div class="lc-name">FELICES 22</div>
+  <div class="lc-desc">
+    Mueve la plataforma para atrapar las capas de pastel.<br>
+    Si te mueves muy brusco o atrapas de lado, ¡las capas pueden caerse!<br>
+    Evita las velas 🕯️ — si las atrapas, pierdes una vida.<br><br>
+    Llega a 22 capas antes de que se acabe el tiempo.
+  </div>
+  <div class="lc-controls">
+    DESKTOP: ← → MOVER<br>
+    MÓVIL: BOTONES EN PANTALLA / DESLIZA
+  </div>
+  <button class="pixel-btn" id="lcStartBtn">► EMPEZAR</button>
+</div>
+
+<!-- END -->
+<div id="endScreen" class="hidden">
+  <div class="end-title" id="endTitle">GAME OVER</div>
+  <div class="end-msg" id="endMsg"></div>
+  <button class="pixel-btn" id="endBtn">► REINTENTAR</button>
+</div>
+
+<!-- MOBILE CONTROLS -->
+<div id="mobileControls">
+  <div class="mob-dpad">
+    <div class="mob-btn" id="btnLeft">◄</div>
+    <div class="mob-btn" id="btnRight">►</div>
+  </div>
+  <div></div>
+</div>
+
+<script>
+// ===== CURSOR =====
+const cursorEl = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursorEl.style.left = e.clientX + 'px';
+  cursorEl.style.top = e.clientY + 'px';
+});
+
+// ===== CANVAS =====
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+let W, H, GROUND_Y, SCALE;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  GROUND_Y = H * 0.82;
+  SCALE = Math.min(W, H) / 400;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ===== GAME STATE =====
+const TOTAL_LAYERS = 22;
+const TIME_LIMIT = 65; // seconds (medium length)
+let layersCount = 0;
+let lives = 3;
+let timeLeft = TIME_LIMIT;
+let gameRunning = false;
+let lastTime = 0;
+let keys = {};
+
+// Layer colors - alternating cake layer colors
+const LAYER_COLORS = ['#7ec850','#a8d8f0','#ffd23f','#c8896a','#5b8c3e','#e8c39e'];
+
+// Plate (player platform)
+let plateX, plateY, plateW, plateVX = 0;
+const PLATE_SPEED = 7;
+const PLATE_FRICTION = 0.85;
+
+// Stack of caught layers (visual cake)
+let stack = []; // {color, wobble, fallen}
+
+// Falling items
+let fallingItems = []; // {x, y, type:'layer'|'candle', color, vy}
+let spawnTimer = 0;
+const SPAWN_INTERVAL = 55;
+
+let animFrame = 0;
+
+// ===== INIT =====
+function initGame() {
+  layersCount = 0;
+  lives = 3;
+  timeLeft = TIME_LIMIT;
+  plateX = W / 2;
+  plateY = GROUND_Y;
+  plateW = 105 * SCALE;
+  plateVX = 0;
+  stack = [];
+  fallingItems = [];
+  spawnTimer = 0;
+  animFrame = 0;
+  lastTime = 0;
+  updateHUD();
+}
+
+// ===== HUD =====
+function updateHUD() {
+  document.getElementById('hudLayers').textContent = layersCount + ' / ' + TOTAL_LAYERS;
+  document.getElementById('hudTimer').textContent = Math.ceil(timeLeft);
+  const hearts = ['♥ ♥ ♥','♥ ♥ ♡','♥ ♡ ♡','♡ ♡ ♡'];
+  document.getElementById('hudLives').textContent = hearts[Math.max(0, 3 - lives)];
+}
+
+// ===== SPAWN ITEMS =====
+function spawnItem() {
+  const isCandle = Math.random() < 0.14; // 22% chance of trap candle
+  fallingItems.push({
+    x: 30 * SCALE + Math.random() * (W - 60 * SCALE),
+    y: -20 * SCALE,
+    type: isCandle ? 'candle' : 'layer',
+    color: LAYER_COLORS[Math.floor(Math.random() * LAYER_COLORS.length)],
+    vy: (1.5 + Math.random() * 0.9) * SCALE,
+    w: 36 * SCALE, h: 16 * SCALE,
+    rot: 0,
+  });
+}
+
+// ===== DRAW PLATE =====
+function drawPlate() {
+  ctx.save();
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(plateX - plateW/2, plateY + 4*SCALE, plateW, 4*SCALE);
+  // plate
+  ctx.fillStyle = '#e0e0e0';
+  ctx.fillRect(plateX - plateW/2, plateY, plateW, 8*SCALE);
+  ctx.fillStyle = '#b0b0b0';
+  ctx.fillRect(plateX - plateW/2, plateY + 6*SCALE, plateW, 2*SCALE);
+  // shine
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(plateX - plateW/2 + 4*SCALE, plateY + 1*SCALE, plateW * 0.3, 2*SCALE);
+  ctx.restore();
+}
+
+// ===== DRAW STACK (cake on plate) =====
+function drawStack() {
+  let baseY = plateY;
+  for (let i = 0; i < stack.length; i++) {
+    const layer = stack[i];
+    const wob = Math.sin(animFrame * 0.15 + i) * layer.wobble * SCALE;
+    const layerH = 14 * SCALE;
+    const layerW = plateW - i * 2 * SCALE;
+    const y = baseY - (i + 1) * layerH;
+    ctx.save();
+    ctx.translate(plateX + wob, y + layerH);
+    ctx.rotate(layer.tilt || 0);
+    ctx.fillStyle = layer.color;
+    ctx.fillRect(-layerW/2, -layerH, layerW, layerH);
+    // frosting line
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillRect(-layerW/2, -layerH, layerW, 3*SCALE);
+    ctx.restore();
+  }
+}
+
+// ===== DRAW FALLING ITEMS =====
+function drawFallingItems() {
+  fallingItems.forEach(item => {
+    ctx.save();
+    ctx.translate(item.x, item.y);
+    if (item.type === 'candle') {
+      // candle body
+      ctx.fillStyle = '#ff6b9d';
+      ctx.fillRect(-4*SCALE, -2*SCALE, 8*SCALE, 16*SCALE);
+      // wick
+      ctx.fillStyle = '#5a3a1a';
+      ctx.fillRect(-1*SCALE, -6*SCALE, 2*SCALE, 4*SCALE);
+      // flame
+      const flick = Math.sin(animFrame * 0.3) * 2;
+      ctx.fillStyle = '#ffd23f';
+      ctx.beginPath();
+      ctx.ellipse(0, -8*SCALE + flick, 4*SCALE, 6*SCALE, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#ff8c00';
+      ctx.beginPath();
+      ctx.ellipse(0, -6*SCALE + flick, 2*SCALE, 3*SCALE, 0, 0, Math.PI*2);
+      ctx.fill();
+    } else {
+      // cake layer
+      ctx.fillStyle = item.color;
+      ctx.fillRect(-item.w/2, -item.h/2, item.w, item.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(-item.w/2, -item.h/2, item.w, 3*SCALE);
+      // little sprinkles
+      ctx.fillStyle = '#e94560';
+      ctx.fillRect(-item.w/4, -item.h/4, 3*SCALE, 3*SCALE);
+      ctx.fillStyle = '#00ff88';
+      ctx.fillRect(item.w/5, -item.h/5, 3*SCALE, 3*SCALE);
+    }
+    ctx.restore();
+  });
+}
+
+// ===== BACKGROUND =====
+function drawBackground() {
+  const grd = ctx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, '#7ec0ee');
+  grd.addColorStop(0.6, '#a8d8f0');
+  grd.addColorStop(1, '#c8e8c0');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+
+  // pixel clouds
+  ctx.fillStyle = '#ffffff';
+  ctx.globalAlpha = 0.85;
+  for (let i = 0; i < 6; i++) {
+    const cx2 = ((i * 220 + animFrame * 0.15) % (W + 100)) - 50;
+    const cy2 = 40*SCALE + (i % 3) * 35*SCALE;
+    ctx.fillRect(cx2, cy2, 40*SCALE, 12*SCALE);
+    ctx.fillRect(cx2 + 10*SCALE, cy2 - 6*SCALE, 24*SCALE, 8*SCALE);
+  }
+  ctx.globalAlpha = 1;
+
+  // ground - minecraft grass block strip
+  ctx.fillStyle = '#8b5a2b';
+  ctx.fillRect(0, GROUND_Y + 8*SCALE, W, H - GROUND_Y);
+  ctx.fillStyle = '#5b8c3e';
+  ctx.fillRect(0, GROUND_Y + 8*SCALE, W, 6*SCALE);
+  // grass block grid lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  const blockSize = 18*SCALE;
+  for (let bx = 0; bx < W; bx += blockSize) {
+    ctx.strokeRect(bx, GROUND_Y + 8*SCALE, blockSize, H - GROUND_Y);
+  }
+}
+
+// ===== COLLISION =====
+function checkCollision() {
+  fallingItems = fallingItems.filter(item => {
+    item.y += item.vy;
+
+    // Check if reaches plate level
+    if (item.y >= plateY - 10*SCALE && item.y < plateY + 18*SCALE) {
+      const inRange = Math.abs(item.x - plateX) < plateW/2 + item.w/4;
+      if (inRange) {
+        if (item.type === 'candle') {
+          // bad item - lose a layer
+          if (stack.length > 0) {
+            stack.pop();
+            layersCount = Math.max(0, layersCount - 1);
+          } else {
+            lives--;
+          }
+          updateHUD();
+          spawnPopText(item.x, plateY, '-1 🕯️', '#ff6b9d');
+          if (lives <= 0) showGameOver();
+          return false;
+        } else {
+          // good layer
+          // Check how fast plate moving / how off-center = chance of falling
+          const speedFactor = Math.abs(plateVX) / PLATE_SPEED; // 0-1
+          const offCenter = Math.abs(item.x - plateX) / (plateW/2); // 0-1
+          const wobbleRisk = speedFactor * 0.3 + offCenter * 0.35;
+
+          const willFall = wobbleRisk > 0.85 && Math.random() < (wobbleRisk - 0.5);
+
+          if (willFall && stack.length > 0) {
+            // existing layer wobbles off
+            stack.pop();
+            layersCount = Math.max(0, layersCount - 1);
+            spawnPopText(plateX, plateY - stack.length * 14 * SCALE, '-1 💥', '#e94560');
+            if (navigator.vibrate) navigator.vibrate(80);
+          } else {
+            stack.push({ color: item.color, wobble: 2 + wobbleRisk * 4, tilt: (Math.random()-0.5) * wobbleRisk * 0.3 });
+            layersCount++;
+            spawnPopText(item.x, plateY - 20*SCALE, '+1 🎂', '#00ff88');
+          }
+          updateHUD();
+
+          if (layersCount >= TOTAL_LAYERS) {
+            showWin();
+          }
+          return false;
+        }
+      }
+    }
+
+    return item.y < H + 30*SCALE;
+  });
+}
+
+// ===== POP TEXT =====
+let popTexts = [];
+function spawnPopText(x, y, text, color) {
+  popTexts.push({ x, y, text, color, life: 40 });
+}
+function drawPopTexts() {
+  popTexts.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life / 40;
+    ctx.font = `${Math.floor(8*SCALE)}px 'Press Start 2P', monospace`;
+    ctx.fillStyle = p.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(p.text, p.x, p.y - (40 - p.life) * 0.5);
+    ctx.restore();
+    p.life--;
+  });
+  popTexts = popTexts.filter(p => p.life > 0);
+}
+
+// ===== GAME OVER / WIN =====
+function showGameOver() {
+  gameRunning = false;
+  const es = document.getElementById('endScreen');
+  es.classList.remove('hidden');
+  document.getElementById('endTitle').style.color = '#e94560';
+  document.getElementById('endTitle').textContent = 'GAME OVER';
+  document.getElementById('endMsg').innerHTML =
+    '¡Las velas ganaron esta ronda!<br>Capas logradas: ' + layersCount + ' / 22<br><br>Inténtalo de nuevo.';
+  document.getElementById('endBtn').textContent = '► REINTENTAR';
+  document.getElementById('endBtn').onclick = restartGame;
+}
+
+function showTimeUp() {
+  gameRunning = false;
+  const es = document.getElementById('endScreen');
+  es.classList.remove('hidden');
+  document.getElementById('endTitle').style.color = '#ffd23f';
+  document.getElementById('endTitle').textContent = "TIME'S UP!";
+  document.getElementById('endMsg').innerHTML =
+    'Capas logradas: ' + layersCount + ' / 22<br><br>¡Tan cerca! Inténtalo de nuevo.';
+  document.getElementById('endBtn').textContent = '► REINTENTAR';
+  document.getElementById('endBtn').onclick = restartGame;
+}
+
+let celebrationTimer = 0;
+let showingCelebration = false;
+
+function showWin() {
+  gameRunning = false;
+  showingCelebration = true;
+  celebrationTimer = 0;
+  document.getElementById('mobileControls').style.display = 'none';
+}
+
+function finalizeWin() {
+  const es = document.getElementById('endScreen');
+  es.classList.remove('hidden');
+  document.getElementById('endTitle').style.color = '#ffd23f';
+  document.getElementById('endTitle').innerHTML = '🎂 22! 🎂';
+  document.getElementById('endMsg').innerHTML =
+    '¡FELIZ CUMPLEAÑOS ENRIQUE!<br><br>' +
+    'Te deseo lo mejor del mundo.<br>' +
+    'Eres una persona muy especial. 🎉';
+  document.getElementById('endBtn').textContent = '► JUGAR DE NUEVO';
+  document.getElementById('endBtn').onclick = restartGame;
+}
+
+function restartGame() {
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('mobileControls').style.display = '';
+  initGame();
+  gameRunning = true;
+  requestAnimationFrame(gameLoop);
+}
+
+// ===== CELEBRATION SCENE =====
+let fireworks = [];
+function spawnFirework(x, y) {
+  const colors = ['#ffd23f','#7ec850','#a8d8f0','#fff','#5b8c3e','#c8896a'];
+  for (let i = 0; i < 12; i++) {
+    fireworks.push({
+      x, y,
+      vx: (Math.random()-0.5)*8*SCALE,
+      vy: (Math.random()-1.5)*8*SCALE,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      life: 60,
+    });
+  }
+}
+
+function drawCelebration() {
+  celebrationTimer++;
+  const grd = ctx.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'#0d001a');
+  grd.addColorStop(1,'#1a0033');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#2a0050';
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+  if (celebrationTimer % 18 === 0) {
+    spawnFirework(Math.random()*W, Math.random()*H*0.5);
+  }
+  fireworks.forEach(f => {
+    f.x += f.vx; f.y += f.vy; f.vy += 0.15; f.life--;
+    ctx.save();
+    ctx.globalAlpha = f.life/60;
+    ctx.fillStyle = f.color;
+    ctx.fillRect(f.x, f.y, 4*SCALE, 4*SCALE);
+    ctx.restore();
+  });
+  fireworks = fireworks.filter(f => f.life > 0);
+
+  // Draw the full cake (all 22 layers) centered
+  const cx = W/2;
+  const baseY = GROUND_Y;
+  ctx.save();
+  ctx.translate(cx, baseY);
+  for (let i = 0; i < TOTAL_LAYERS; i++) {
+    const layerH = Math.max(6*SCALE, 11*SCALE - i*0.15*SCALE);
+    const layerW = Math.max(40*SCALE, 100*SCALE - i*2.5*SCALE);
+    const y = -(i+1)*layerH;
+    ctx.fillStyle = LAYER_COLORS[i % LAYER_COLORS.length];
+    ctx.fillRect(-layerW/2, y, layerW, layerH);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillRect(-layerW/2, y, layerW, 2*SCALE);
+  }
+  // Candles spelling 22
+  const topY = -(TOTAL_LAYERS)*9*SCALE - 4*SCALE;
+  const bounce = Math.sin(celebrationTimer*0.1)*3*SCALE;
+
+  ctx.font = `${Math.floor(40*SCALE)}px 'Press Start 2P', monospace`;
+  ctx.fillStyle = '#ffd23f';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#ffd23f';
+  ctx.shadowBlur = 15 + Math.sin(celebrationTimer*0.2)*5;
+  ctx.fillText('22', 0, topY - 30*SCALE + bounce);
+  ctx.shadowBlur = 0;
+
+  // small candle flames around
+  for (let i = -1; i <= 1; i+=2) {
+    const flick = Math.sin(celebrationTimer*0.3 + i)*2;
+    ctx.font = `${Math.floor(16*SCALE)}px serif`;
+    ctx.fillText('🕯️', i * 50*SCALE, topY - 5*SCALE + flick);
+  }
+  ctx.restore();
+
+  if (celebrationTimer > 180) {
+    showingCelebration = false;
+    finalizeWin();
+  }
+}
+
+// ===== MAIN LOOP =====
+function gameLoop(ts) {
+  if (!lastTime) lastTime = ts;
+  const rawDt = ts - lastTime;
+  const dt = rawDt > 100 ? 1 : Math.min(rawDt/16.67, 1.2);
+  lastTime = ts;
+  animFrame++;
+
+  ctx.clearRect(0,0,W,H);
+
+  if (showingCelebration) {
+    drawCelebration();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  if (!gameRunning) return;
+
+  drawBackground();
+
+  // Timer
+  timeLeft -= dt/60;
+  if (timeLeft <= 0) {
+    timeLeft = 0;
+    updateHUD();
+    showTimeUp();
+    return;
+  }
+
+  // Plate movement
+  if (keys['ArrowLeft'] || keys['left']) plateVX -= PLATE_SPEED * 0.25 * dt;
+  if (keys['ArrowRight'] || keys['right']) plateVX += PLATE_SPEED * 0.25 * dt;
+  plateVX *= PLATE_FRICTION;
+  plateVX = Math.max(-PLATE_SPEED*1.3, Math.min(PLATE_SPEED*1.3, plateVX));
+  plateX += plateVX * dt;
+  plateX = Math.max(plateW/2 + 10*SCALE, Math.min(W - plateW/2 - 10*SCALE, plateX));
+
+  // Spawn
+  spawnTimer += dt;
+  const spawnInterval = Math.max(38, SPAWN_INTERVAL - Math.floor((TIME_LIMIT - timeLeft) * 0.35));
+  if (spawnTimer >= spawnInterval) {
+    spawnItem();
+    spawnTimer = 0;
+  }
+
+  checkCollision();
+
+  drawFallingItems();
+  drawStack();
+  drawPlate();
+  drawPopTexts();
+
+  // Update HUD timer display
+  document.getElementById('hudTimer').textContent = Math.ceil(timeLeft);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ===== CONTROLS =====
+document.addEventListener('keydown', e => { keys[e.key] = true; });
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+document.getElementById('btnLeft').addEventListener('touchstart', e => { keys['left'] = true; e.preventDefault(); }, {passive:false});
+document.getElementById('btnLeft').addEventListener('touchend', () => { keys['left'] = false; });
+document.getElementById('btnRight').addEventListener('touchstart', e => { keys['right'] = true; e.preventDefault(); }, {passive:false});
+document.getElementById('btnRight').addEventListener('touchend', () => { keys['right'] = false; });
+
+// Swipe / drag control for plate
+let dragging = false;
+canvas.addEventListener('touchstart', e => { dragging = true; }, {passive:true});
+canvas.addEventListener('touchmove', e => {
+  if (dragging && gameRunning) {
+    const x = e.touches[0].clientX;
+    plateVX = (x - plateX) * 0.15;
+  }
+}, {passive:true});
+canvas.addEventListener('touchend', () => { dragging = false; });
+
+// ===== START =====
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('introScreen').classList.add('hidden');
+  document.getElementById('levelCard').classList.remove('hidden');
+});
+
+document.getElementById('lcStartBtn').addEventListener('click', () => {
+  document.getElementById('levelCard').classList.add('hidden');
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('gameScreen').classList.remove('hidden');
+  document.getElementById('mobileControls').style.display = '';
+  initGame();
+  gameRunning = true;
+  requestAnimationFrame(gameLoop);
+});
+</script>
+</body>
+</html>
